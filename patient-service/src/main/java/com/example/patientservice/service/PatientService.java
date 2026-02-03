@@ -1,12 +1,16 @@
 package com.example.patientservice.service;
 
 
+import com.example.grpc.billing.BillingResponse;
+import com.example.grpc.billing.BillingServiceGrpc;
+import com.example.patientservice.dto.PatientBillingSummaryDTO;
 import com.example.patientservice.dto.PatientRequestDTO;
 import com.example.patientservice.dto.PatientResponseDTO;
 import com.example.patientservice.dto.PatientUpdateDTO;
 import com.example.patientservice.exception.EmailAlreadyExistsException;
 import com.example.patientservice.exception.ExceptionMessages;
 import com.example.patientservice.exception.PatientNotFoundException;
+import com.example.patientservice.grpc.BillingServiceGrpcClient;
 import com.example.patientservice.mapper.PatientMapper;
 import com.example.patientservice.model.Patient;
 import com.example.patientservice.repository.PatientRepository;
@@ -22,6 +26,7 @@ public class PatientService {
 
     private final PatientRepository patientRepository;
     private final PatientMapper patientMapper;
+    private final BillingServiceGrpcClient billingServiceGrpcClient;
 
 
     public List<PatientResponseDTO> getAllPatients() {
@@ -72,6 +77,10 @@ public class PatientService {
             throw new PatientNotFoundException(ExceptionMessages.PATIENT_NOT_FOUND + patientId);
         }
         patientRepository.deleteById(patientId);
+    }
+
+    public PatientBillingSummaryDTO getBillingInfo(UUID patientId) {
+        return billingServiceGrpcClient.getBillingInfo(patientId);
     }
 
 }

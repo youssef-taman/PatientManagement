@@ -1,5 +1,7 @@
 package com.example.patientservice.controller;
 
+import com.example.grpc.billing.BillingResponse;
+import com.example.patientservice.dto.PatientBillingSummaryDTO;
 import com.example.patientservice.dto.PatientRequestDTO;
 import com.example.patientservice.dto.PatientResponseDTO;
 import com.example.patientservice.dto.PatientUpdateDTO;
@@ -100,4 +102,15 @@ public class PatientController {
         patientService.deletePatient(UUID.fromString(patientId));
         return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
+
+    @GetMapping("/{patientId}/billing")
+    @Operation(summary = "Get billing info for a patient", description = "Returns billing information for a specific patient")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully retrieved billing info")
+    })
+
+    public ResponseEntity<PatientBillingSummaryDTO> getBillingInfo(@PathVariable("patientId") String patientId) {
+        return ResponseEntity.status(HttpStatus.OK).body(patientService.getBillingInfo(UUID.fromString(patientId)));
+    }
+
 }

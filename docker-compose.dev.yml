@@ -86,6 +86,29 @@ services:
     depends_on:
       - mysql
 
+  analytics-service:
+
+    image: maven:3.9.9-eclipse-temurin-17
+    container_name: analytics-service
+    working_dir: /app
+    command: ./mvnw spring-boot:run
+    restart: always
+    ports:
+      - "8083:8083"
+    environment:
+      SERVER_PORT: 8083
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER: org.apache.kafka.common.serialization.ByteArrayDeserializer
+    volumes:
+      - ./analytics-service:/app
+      - ~/.m2:/root/.m2
+    depends_on:
+      - kafka
+
+
+
 volumes:
   mysql-data:
 

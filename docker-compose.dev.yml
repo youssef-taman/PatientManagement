@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  mysql:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+  patient-service:
+    image: maven:3.9.9-eclipse-temurin-17
+    container_name: patient-service
+    working_dir: /app
+    command: ./mvnw spring-boot:run
+    restart: always
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://${RELATIONAL_DB_HOST}:3306/${MYSQL_DATABASE}
+      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
+      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SERVER_PORT: 8080
+      GRPC_SERVER_PORT: ${GRPC_PATIENT_SERVICE_PORT}
+      GRPC_BILLING_SERVICE_HOST: billing-service
+      GRPC_BILLING_SERVICE_PORT: ${GRPC_BILLING_SERVICE_PORT}
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
+      SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.ByteArraySerializer
+    volumes:
+      - ./patient-service:/app
+      - ~/.m2:/root/.m2
+    depends_on:
+      - mysql
+      - kafka
+
+  billing-service:
+    image: maven:3.9.9-eclipse-temurin-17
+    container_name: billing-service
+    working_dir: /app
+    command: ./mvnw spring-boot:run
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      SERVER_PORT: 8082
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      GRPC_SERVER_PORT: ${GRPC_BILLING_SERVICE_PORT}
+    volumes:
+      - ./billing-service:/app
+      - ~/.m2:/root/.m2
+    depends_on:
+      - mysql
+
+volumes:
+  mysql-data:
+
+networks:
+  default:
+    name: application-network
+    driver: bridge

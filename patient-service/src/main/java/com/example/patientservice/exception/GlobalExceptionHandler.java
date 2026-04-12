@@ -40,4 +40,14 @@ public class GlobalExceptionHandler {
         errors.put("message", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errors);
     }
+
+    @ExceptionHandler(BillingServiceUnavailableException.class)
+    public ResponseEntity<Map<String, String>> handleBillingServerStubDown(BillingServiceUnavailableException ex) {
+        log.warn(ex.getMessage());
+        Map<String, String> errors = new HashMap<>();
+        errors.put("service-name", ex.getServiceName());
+        errors.put("message" , ex.getMessage()) ;
+        errors.put("cause", String.valueOf(ex.getCause()));
+        return new ResponseEntity<>(errors , HttpStatus.SERVICE_UNAVAILABLE);
+    }
 }

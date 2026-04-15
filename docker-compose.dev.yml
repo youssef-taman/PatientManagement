@@ -1,18 +1,17 @@
 version: "3.9"
 
 services:
-  mysql:
+
+
+  auth-db:
     image: mysql:8.0
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${AUTH_DB}
     ports:
       - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
+
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -41,20 +40,43 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
+
+  api-gateway:
+    image: maven:3.9.9-eclipse-temurin-17
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    working_dir: /app
+    command: ./mvnw spring-boot:run
+    restart: always
+    environment:
+        SERVER_PORT: 8080
+    volumes:
+        - ./api-gateway:/app
+        - ~/.m2:/root/.m2
+
+  patient-db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PATIENT_DB_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${PATIENT_DB}
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+
   patient-service:
     image: maven:3.9.9-eclipse-temurin-17
     container_name: patient-service
     working_dir: /app
     command: ./mvnw spring-boot:run
     restart: always
-    ports:
-      - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://${RELATIONAL_DB_HOST}:3306/${MYSQL_DATABASE}
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PATIENT_DB_SERVICE}:3306/${PATIENT_DB}
+      SPRING_DATASOURCE_USERNAME: ${PATIENT_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${PATIENT_DB_ROOT_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
-      SERVER_PORT: 8080
+      SERVER_PORT: 8081
       GRPC_SERVER_PORT: ${GRPC_PATIENT_SERVICE_PORT}
       GRPC_BILLING_SERVICE_HOST: billing-service
       GRPC_BILLING_SERVICE_PORT: ${GRPC_BILLING_SERVICE_PORT}
@@ -65,8 +87,9 @@ services:
       - ./patient-service:/app
       - ~/.m2:/root/.m2
     depends_on:
-      - mysql
+      - patient-db
       - kafka
+      - api-gateway
 
   billing-service:
     image: maven:3.9.9-eclipse-temurin-17
@@ -74,17 +97,12 @@ services:
     working_dir: /app
     command: ./mvnw spring-boot:run
     restart: always
-    ports:
-      - "8082:8082"
     environment:
-      SERVER_PORT: 8082
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GRPC_SERVER_PORT: ${GRPC_BILLING_SERVICE_PORT}
     volumes:
       - ./billing-service:/app
       - ~/.m2:/root/.m2
-    depends_on:
-      - mysql
 
   analytics-service:
 
@@ -93,10 +111,7 @@ services:
     working_dir: /app
     command: ./mvnw spring-boot:run
     restart: always
-    ports:
-      - "8083:8083"
     environment:
-      SERVER_PORT: 8083
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer

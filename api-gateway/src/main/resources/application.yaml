@@ -1,0 +1,14 @@
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: patient-service-route
+          uri: http://patient-service:8081
+          predicates:
+            - Path=/api/v1/patients/**
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.cloud.gateway: TRACE
+    reactor.netty.http.client: DEBUG
+    reactor.netty.http.server: DEBUG

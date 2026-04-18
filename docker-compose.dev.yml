@@ -5,7 +5,7 @@ services:
 
   auth-db:
     image: mysql:8.0
-    restart: always
+    restart: no
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: ${AUTH_DB}
@@ -48,7 +48,7 @@ services:
       - "8080:8080"
     working_dir: /app
     command: ./mvnw spring-boot:run
-    restart: always
+    restart: no
     environment:
         SERVER_PORT: 8080
     volumes:
@@ -57,7 +57,7 @@ services:
 
   patient-db:
     image: mysql:8.0
-    restart: always
+    restart: no
     environment:
       MYSQL_ROOT_PASSWORD: ${PATIENT_DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${PATIENT_DB}
@@ -70,7 +70,7 @@ services:
     container_name: patient-service
     working_dir: /app
     command: ./mvnw spring-boot:run
-    restart: always
+    restart: no
     environment:
       SPRING_DATASOURCE_URL: jdbc:mysql://${PATIENT_DB_SERVICE}:3306/${PATIENT_DB}
       SPRING_DATASOURCE_USERNAME: ${PATIENT_DB_USER}
@@ -96,7 +96,7 @@ services:
     container_name: billing-service
     working_dir: /app
     command: ./mvnw spring-boot:run
-    restart: always
+    restart: no
     environment:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       GRPC_SERVER_PORT: ${GRPC_BILLING_SERVICE_PORT}
@@ -110,7 +110,7 @@ services:
     container_name: analytics-service
     working_dir: /app
     command: ./mvnw spring-boot:run
-    restart: always
+    restart: no
     environment:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092

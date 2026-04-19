@@ -3,7 +3,7 @@ package com.example.authservice.controller;
 
 import com.example.authservice.dto.AuthResponseDTO;
 import com.example.authservice.dto.AuthRequestDTO;
-import com.example.authservice.repository.UserRepository;
+import com.example.authservice.dto.ValidateResponseDTO;
 import com.example.authservice.service.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -29,12 +29,7 @@ public class AuthController {
     }
 
     @GetMapping("/validate")
-    public ResponseEntity<Void> validateToken(@RequestHeader("Authorization") String token) {
-        Boolean status = authService.validate(token);
-        if (!status) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-        return ResponseEntity.ok().build();
+    public ResponseEntity<ValidateResponseDTO> validateToken(@RequestHeader("Authorization") String token) {
+        return new ResponseEntity<>(authService.validate(token), HttpStatus.OK);
     }
-
 }

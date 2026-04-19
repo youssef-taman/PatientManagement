@@ -3,6 +3,7 @@ package com.example.authservice.service;
 
 import com.example.authservice.dto.AuthResponseDTO;
 import com.example.authservice.dto.AuthRequestDTO;
+import com.example.authservice.dto.ValidateResponseDTO;
 import com.example.authservice.exception.ExceptionMessages;
 import com.example.authservice.exception.InvalidCredentialsException;
 import com.example.authservice.model.User;
@@ -42,8 +43,21 @@ public class AuthService {
         return new AuthResponseDTO(jwtToken, "jwt", jwtUtils.getExpirationDate(jwtToken));
     }
 
-    public Boolean validate(String token) {
-        return token != null && jwtUtils.validateJwt(token) && ! jwtUtils.isExpired(token);
+    public ValidateResponseDTO validate(String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            throw new InvalidCredentialsException(ExceptionMessages.INVALID_TOKEN);
+        }
+
+        token = token.substring(7);
+
+        if (!jwtUtils.validateJwt(token) || jwtUtils.isExpired(token)) {
+                throw new InvalidCredentialsException(ExceptionMessages.INVALID_TOKEN);
+            }
+
+        String email = jwtUtils.getEmail(token);
+        String role = jwtUtils.getRole(token);
+        return new ValidateResponseDTO(email, role);
+
 
     }
 

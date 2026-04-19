@@ -1,18 +1,35 @@
+version: "3.9"
+
 services:
 
-  mysql:
-    image: mysql:8.0
-    restart: on-failure
-    environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: ${MYSQL_DATABASE}
-      MYSQL_USER: ${MYSQL_USER}
-      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
+  # =======================
+  # DATABASES
+  # =======================
 
+  auth-db:
+    image: mysql:8.0
+    restart: no
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_DATABASE: ${AUTH_DB}
+    volumes:
+      - auth-db-data:/var/lib/mysql
+
+
+  patient-db:
+    image: mysql:8.0
+    restart: no
+    environment:
+      MYSQL_ROOT_PASSWORD: ${ROOT_PASSWORD}
+      MYSQL_DATABASE: ${PATIENT_DB}
+    volumes:
+      - patient-db-data:/var/lib/mysql
+
+
+
+  # =========================
+  # ZOOKEEPER + KAFKA
+  # =========================
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
@@ -34,47 +51,131 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
 
-      # Listeners
       KAFKA_LISTENERS: INTERNAL://:29092,EXTERNAL://:9092
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:29092,EXTERNAL://localhost:9092
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
 
-      # Replication (safe defaults for single node)
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
-  patient-service:
-    build: patient-service
+
+  # =========================
+  # AUTH SERVICE
+  # =========================
+
+  auth-service:
+    build: ./auth-service
     restart: on-failure
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://${RELATIONAL_DB_HOST}:3306/${MYSQL_DATABASE}
-      SPRING_DATASOURCE_USERNAME: ${MYSQL_USER}
-      SPRING_DATASOURCE_PASSWORD: ${MYSQL_PASSWORD}
+
+      SERVER_PORT: 8084
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://${AUTH_DB_SERVICE}:3306/${AUTH_DB}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ROOT_PASSWORD}
+      SPRING_JPA_HIBERNATE_DDL_AUTO: create-drop
+
+      JWT_SECRET: ${JWT_SECRET}
+
+    depends_on:
+      - auth-db
+
+
+  # =========================
+  # PATIENT SERVICE
+  # =========================
+
+  patient-service:
+    build: ./patient-service
+    restart: on-failure
+    environment:
+
+      SPRING_DATASOURCE_URL: jdbc:mysql://${PATIENT_DB_SERVICE}:3306/${PATIENT_DB}
+      SPRING_DATASOURCE_USERNAME: ${PATIENT_DB_USER}
+      SPRING_DATASOURCE_PASSWORD: ${ROOT_PASSWORD}
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
       SERVER_PORT: 8081
+
       GRPC_SERVER_PORT: ${GRPC_PATIENT_SERVICE_PORT}
       GRPC_BILLING_SERVICE_HOST: billing-service
       GRPC_BILLING_SERVICE_PORT: ${GRPC_BILLING_SERVICE_PORT}
+
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
       SPRING_KAFKA_PRODUCER_KEY_SERIALIZER: org.apache.kafka.common.serialization.StringSerializer
       SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER: org.apache.kafka.common.serialization.ByteArraySerializer
 
     depends_on:
-      - mysql
+      - patient-db
       - kafka
+      - billing-service
+
+
+  # =========================
+  # BILLING SERVICE
+  # =========================
 
   billing-service:
-    build: billing-service
+    build: ./billing-service
     restart: on-failure
     environment:
+
       SERVER_PORT: 8082
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+
       GRPC_SERVER_PORT: ${GRPC_BILLING_SERVICE_PORT}
 
+
+  # =========================
+  # ANALYTICS SERVICE
+  # =========================
+
+  analytics-service:
+    build: ./analytics-service
+    restart: on-failure
+    environment:
+
+      SERVER_PORT: 8083
+
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:29092
+      SPRING_KAFKA_CONSUMER_KEY_DESERIALIZER: org.apache.kafka.common.serialization.StringDeserializer
+      SPRING_KAFKA_CONSUMER_VALUE_DESERIALIZER: org.apache.kafka.common.serialization.ByteArrayDeserializer
+
+    depends_on:
+      - kafka
+
+
+  # =========================
+  # API GATEWAY
+  # =========================
+
+  api-gateway:
+    build: ./api-gateway
+    ports:
+      - "8080:8080"
+    restart: on-failure
+    environment:
+      SERVER_PORT: 8080
+      AUTH_SERVICE_URL: http://auth-service:8084
+    depends_on:
+      - auth-service
+      - patient-service
+      - billing-service
+
+
+# =========================
+# VOLUMES
+# =========================
+
 volumes:
-  mysql-data:
+  auth-db-data:
+  patient-db-data:
+
+
+# =========================
+# NETWORK
+# =========================
 
 networks:
   default:

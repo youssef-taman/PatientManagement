@@ -42,5 +42,10 @@ public class AuthService {
         return new AuthResponseDTO(jwtToken, "jwt", jwtUtils.getExpirationDate(jwtToken));
     }
 
+    public Boolean validate(String token) {
+        return token != null && jwtUtils.validateJwt(token) && ! jwtUtils.isExpired(token);
+
+    }
+
 
 }

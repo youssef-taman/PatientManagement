@@ -28,4 +28,13 @@ public class AuthController {
         return new ResponseEntity<>(authService.authenticate(authRequestDTO), HttpStatus.OK);
     }
 
+    @GetMapping("/validate")
+    public ResponseEntity<Void> validateToken(@RequestHeader("Authorization") String token) {
+        Boolean status = authService.validate(token);
+        if (!status) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok().build();
+    }
+
 }

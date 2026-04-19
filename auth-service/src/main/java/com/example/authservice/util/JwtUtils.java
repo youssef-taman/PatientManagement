@@ -23,7 +23,7 @@ public class JwtUtils {
 
     private final SecretKey SECRET_KEY;
 
-    public JwtUtils(@Value("${jwt_secret}") String jwtSecret) {
+    public JwtUtils(@Value("${jwt.secret}") String jwtSecret) {
         SECRET_KEY = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
     }
 

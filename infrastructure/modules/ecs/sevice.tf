@@ -26,8 +26,8 @@ resource "aws_ecs_service" "services" {
     for_each = [aws_service_discovery_service.services[each.key].arn]
     content {
       registry_arn   = service_registries.value
-      container_name  = each.key
-      container_port  = each.value.container_port
+      # container_name  = each.key
+      # container_port  = each.value.container_port
     }
   }
 }

@@ -23,11 +23,7 @@ variable "ecs_tasks_security_group_id" {
   type        = string
 }
 
-variable "db_secret_arn" {
-  description = "The ARN of the database secret in AWS Secrets Manager."
-  type        = string
-  
-}
+
 variable "jwt_secret_arn" {
   description = "The ARN of the JWT secret in AWS Secrets Manager."
   type        = string
@@ -174,5 +170,15 @@ variable "kafka_bootstrap_server_port" {
 
 variable "db_username" {
   description = "db_username"
-  type = "string"
+  type = string
+}
+
+variable "auth_db_secret_arn" {
+  description = "Secrets Manager ARN for auth DB password"
+  type        = string
+}
+
+variable "patient_db_secret_arn" {
+  description = "Secrets Manager ARN for patient DB password"
+  type        = string
 }

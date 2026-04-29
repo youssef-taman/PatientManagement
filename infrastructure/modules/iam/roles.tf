@@ -28,7 +28,7 @@ resource "aws_iam_role_policy" "ecs_secrets" {
       {
         Effect = "Allow"
         Action = [
-          "secretsmanager:GetSecretValue"
+          "secretsmanager:GetSecretValue",
         ]
         Resource = "*"
       }

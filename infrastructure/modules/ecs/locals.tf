@@ -22,7 +22,7 @@ locals {
         SPRING_JPA_HIBERNATE_DDL_AUTO = "create-drop"
       }
       secrets = {
-        SPRING_DATASOURCE_PASSWORD = var.db_secret_arn
+        SPRING_DATASOURCE_PASSWORD = var.auth_db_secret_arn
         JWT_SECRET                 = var.jwt_secret_arn
       }
     }
@@ -54,7 +54,7 @@ locals {
         SPRING_KAFKA_PRODUCER_VALUE_SERIALIZER = "org.apache.kafka.common.serialization.ByteArraySerializer"
       }
       secrets = {
-        SPRING_DATASOURCE_PASSWORD = var.db_secret_arn
+        SPRING_DATASOURCE_PASSWORD = var.patient_db_secret_arn
       }
     }
     "analytics-service" = {

@@ -6,7 +6,7 @@ resource "aws_db_instance" "auth" {
 	allocated_storage            = 20
 	db_name                      = var.auth_database_name
 	username                     = var.db_username
-	
+	manage_master_user_password  = true 
 	db_subnet_group_name         = var.db_subnet_group_name
 	vpc_security_group_ids       = [var.db_security_group_id]
 	publicly_accessible          = false
@@ -23,7 +23,7 @@ resource "aws_db_instance" "patient" {
 	allocated_storage            = 20
 	db_name                      = var.patient_database_name
 	username                     = var.db_username
-    
+    manage_master_user_password  = true
 	db_subnet_group_name         = var.db_subnet_group_name
 	vpc_security_group_ids       = [var.db_security_group_id]
 	publicly_accessible          = false
